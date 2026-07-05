@@ -1,0 +1,54 @@
+# scripts/test_build_dashboard.py
+import os
+import sys
+import tempfile
+
+import formulas
+
+sys.path.insert(0, os.path.dirname(__file__))
+import build_dashboard
+from test_helpers import sample_workbook
+
+REAL_WORKBOOK = os.path.join(os.path.dirname(__file__), '..', 'expense_tracker_2026.xlsx')
+
+
+def calc(path):
+    xl = formulas.ExcelModel().loads(path).finish()
+    return xl.calculate()
+
+
+def cell_value(sol, path, sheet, cell):
+    key = "'[%s]%s'!%s" % (os.path.basename(path), sheet.upper(), cell)
+    v = sol[key].value
+    try:
+        return v[0][0]
+    except (TypeError, IndexError):
+        return v
+
+
+def test_read_categories():
+    import openpyxl
+    wb = openpyxl.load_workbook(REAL_WORKBOOK)
+    income, main, main_sub = build_dashboard.read_categories(wb)
+    assert income == ['Investor Capital', 'Partner Contribution', 'Loan Received', 'Sales']
+    assert len(main) == 10
+    assert sum(len(v) for v in main_sub.values()) == 68
+    print("test_read_categories PASSED")
+
+
+def test_monthly_trend_table():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_dashboard.build(path)
+        sol = calc(path)
+        # Jan2026 row is MONTHLY_TREND_FIRST_ROW (45): Receipts=1000, Payments=400, Closing=600
+        row = build_dashboard.MONTHLY_TREND_FIRST_ROW
+        assert cell_value(sol, path, 'Dashboard', 'B%d' % row) == 1000
+        assert cell_value(sol, path, 'Dashboard', 'C%d' % row) == 400
+        assert cell_value(sol, path, 'Dashboard', 'D%d' % row) == 600
+        print("test_monthly_trend_table PASSED")
+
+
+if __name__ == '__main__':
+    test_read_categories()
+    test_monthly_trend_table()
