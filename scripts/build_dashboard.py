@@ -291,7 +291,7 @@ def _style_dashboard(ws):
 
 
 def build(path):
-    wb = openpyxl.load_workbook(path)
+    wb = openpyxl.load_workbook(path, keep_vba=path.endswith('.xlsm'))
     if 'Dashboard' in wb.sheetnames:
         del wb['Dashboard']
     ws = wb.create_sheet('Dashboard', 0)
@@ -309,4 +309,4 @@ def build(path):
 
 
 if __name__ == '__main__':
-    build(sys.argv[1] if len(sys.argv) > 1 else 'expense_tracker_2026.xlsx')
+    build(sys.argv[1] if len(sys.argv) > 1 else 'expense_tracker_2026.xlsm')

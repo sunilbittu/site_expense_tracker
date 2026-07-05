@@ -1,17 +1,31 @@
 import shutil
 import os
+import sys
 import openpyxl
 
-SOURCE_WORKBOOK = os.path.join(os.path.dirname(__file__), '..', 'expense_tracker_2026.xlsx')
+sys.path.insert(0, os.path.dirname(__file__))
+from build_dashboard import MONTH_SHEETS
+
+SOURCE_WORKBOOK = os.path.join(os.path.dirname(__file__), '..', 'expense_tracker_2026.xlsm')
 
 
 def sample_workbook(tmp_dir):
-    """Copy the real workbook into tmp_dir and inject one sample Receipts
-    row and one sample Payments row into Jan2026. Returns the new path."""
-    dest = os.path.join(tmp_dir, 'sample.xlsx')
+    """Copy the real workbook into tmp_dir, clear all pre-existing demo data
+    from every month sheet, and inject one sample Receipts row and one
+    sample Payments row into Jan2026. Returns the new path."""
+    dest = os.path.join(tmp_dir, 'sample.xlsm')
     shutil.copyfile(SOURCE_WORKBOOK, dest)
 
-    wb = openpyxl.load_workbook(dest)
+    wb = openpyxl.load_workbook(dest, keep_vba=True)
+
+    # Clear any pre-existing demo data on every month sheet so the fixture
+    # is self-contained regardless of what the live workbook currently holds.
+    for month in MONTH_SHEETS:
+        month_ws = wb[month]
+        for row in range(3, 101):
+            for col in range(1, 16):  # A-O covers both Receipts (A-F) and Payments (I-O)
+                month_ws.cell(row=row, column=col).value = None
+
     ws = wb['Jan2026']
     # Receipts row: SNO(A) Date(B) Receipts(C) Amount(D) Category(E) Payment Mode(F)
     ws['A3'] = 1

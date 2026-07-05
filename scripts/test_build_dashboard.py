@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import build_dashboard
 from test_helpers import sample_workbook
 
-REAL_WORKBOOK = os.path.join(os.path.dirname(__file__), '..', 'expense_tracker_2026.xlsx')
+REAL_WORKBOOK = os.path.join(os.path.dirname(__file__), '..', 'expense_tracker_2026.xlsm')
 
 
 def calc(path):
@@ -140,15 +140,16 @@ def test_charts():
 def test_builds_cleanly_against_real_workbook():
     with tempfile.TemporaryDirectory() as tmp:
         import shutil
-        path = os.path.join(tmp, 'real_copy.xlsx')
+        path = os.path.join(tmp, 'real_copy.xlsm')
         shutil.copyfile(REAL_WORKBOOK, path)
         build_dashboard.build(path)
         sol = calc(path)
 
-        # With no data entered anywhere, every KPI must resolve to 0, not an error.
+        # Whatever data currently exists in the real workbook, every KPI
+        # must resolve to a plain number, never an error (#REF!, #N/A, etc).
         for cell in build_dashboard.KPI_CELLS.values():
             value = cell_value(sol, path, 'Dashboard', cell)
-            assert value == 0, "%s resolved to %r, expected 0" % (cell, value)
+            assert isinstance(value, (int, float)), "%s resolved to %r, expected a number" % (cell, value)
 
         print("test_builds_cleanly_against_real_workbook PASSED")
 
