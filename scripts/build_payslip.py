@@ -1,6 +1,7 @@
 import sys
 
 import openpyxl
+from openpyxl.worksheet.datavalidation import DataValidation
 
 sys.path.insert(0, __file__.rsplit('/', 1)[0])
 from build_dashboard import MONTH_SHEETS
@@ -12,6 +13,21 @@ WORKERS_LAST_ROW = 52  # 50-worker capacity
 PAYENTRIES_HEADER_ROW = 2
 PAYENTRIES_FIRST_ROW = 3
 PAYENTRIES_LAST_ROW = 502  # 500-entry capacity
+
+PAYSLIP_SHEET_NAME = 'Payslip'
+PAYSLIP_WORKER_CELL = 'B3'
+PAYSLIP_MONTH_CELL = 'B4'
+PAYSLIP_WORKER_ID_CELL = 'B6'
+PAYSLIP_ROLE_CELL = 'B7'
+PAYSLIP_RATE_TYPE_CELL = 'B8'
+PAYSLIP_RATE_CELL = 'B9'
+PAYSLIP_MESSAGE_CELL = 'B12'
+PAYSLIP_DAYS_WORKED_CELL = 'B13'
+PAYSLIP_GROSS_PAY_CELL = 'B14'
+PAYSLIP_DEDUCTION_CELL = 'B15'
+PAYSLIP_NET_PAY_CELL = 'B16'
+PAYSLIP_PAYMENT_MODE_CELL = 'B17'
+PAYSLIP_MATCH_ROW_CELL = 'Z1'  # hidden helper
 
 
 def _add_workers_sheet(ws):
@@ -56,6 +72,63 @@ def _add_payentries_sheet(ws):
     ws.column_dimensions['K'].hidden = True
 
 
+def _add_payslip_sheet(ws):
+    ws.cell(row=1, column=1, value='Payslip')
+
+    ws['A3'] = 'Worker:'
+    ws['A4'] = 'Month:'
+    ws['A6'] = 'Worker ID:'
+    ws['A7'] = 'Role:'
+    ws['A8'] = 'Rate Type:'
+    ws['A9'] = 'Rate / Agreed Amount:'
+    ws['A13'] = 'Days Worked:'
+    ws['A14'] = 'Gross Pay:'
+    ws['A15'] = 'Advance/Deduction:'
+    ws['A16'] = 'Net Pay:'
+    ws['A17'] = 'Payment Mode:'
+    ws['A18'] = 'Generated On:'
+
+    worker_range = 'Workers!$B$%d:$B$%d' % (WORKERS_FIRST_ROW, WORKERS_LAST_ROW)
+    worker_id_range = 'Workers!$A$%d:$A$%d' % (WORKERS_FIRST_ROW, WORKERS_LAST_ROW)
+
+    ws[PAYSLIP_WORKER_ID_CELL] = '=IF($B$3="","",INDEX(%s,MATCH($B$3,%s,0)))' % (worker_id_range, worker_range)
+    ws[PAYSLIP_ROLE_CELL] = '=IF($B$3="","",INDEX(Workers!$C$%d:$C$%d,MATCH($B$3,%s,0)))' % (
+        WORKERS_FIRST_ROW, WORKERS_LAST_ROW, worker_range)
+    ws[PAYSLIP_RATE_TYPE_CELL] = '=IF($B$3="","",INDEX(Workers!$D$%d:$D$%d,MATCH($B$3,%s,0)))' % (
+        WORKERS_FIRST_ROW, WORKERS_LAST_ROW, worker_range)
+    ws[PAYSLIP_RATE_CELL] = '=IF($B$3="","",INDEX(Workers!$E$%d:$E$%d,MATCH($B$3,%s,0)))' % (
+        WORKERS_FIRST_ROW, WORKERS_LAST_ROW, worker_range)
+
+    key_range = 'PayEntries!$K$%d:$K$%d' % (PAYENTRIES_FIRST_ROW, PAYENTRIES_LAST_ROW)
+    ws[PAYSLIP_MATCH_ROW_CELL] = '=IFERROR(MATCH(%s&"|"&%s,%s,0),0)' % (
+        PAYSLIP_WORKER_ID_CELL, PAYSLIP_MONTH_CELL, key_range)
+
+    ws[PAYSLIP_MESSAGE_CELL] = '=IF(%s=0,"No pay entry found for this period","")' % PAYSLIP_MATCH_ROW_CELL
+
+    def _payentries_lookup(col_letter):
+        rng = 'PayEntries!$%s$%d:$%s$%d' % (col_letter, PAYENTRIES_FIRST_ROW, col_letter, PAYENTRIES_LAST_ROW)
+        return '=IF(%s=0,"",INDEX(%s,%s))' % (PAYSLIP_MATCH_ROW_CELL, rng, PAYSLIP_MATCH_ROW_CELL)
+
+    ws[PAYSLIP_DAYS_WORKED_CELL] = _payentries_lookup('D')
+    ws[PAYSLIP_GROSS_PAY_CELL] = _payentries_lookup('E')
+    ws[PAYSLIP_DEDUCTION_CELL] = _payentries_lookup('F')
+    ws[PAYSLIP_NET_PAY_CELL] = _payentries_lookup('G')
+    ws[PAYSLIP_PAYMENT_MODE_CELL] = _payentries_lookup('H')
+    ws['B18'] = '=TODAY()'
+
+
+def _add_payslip_dropdowns(ws):
+    active_name_range = "='Workers'!$H$%d:$H$%d" % (WORKERS_FIRST_ROW, WORKERS_LAST_ROW)
+    dv_worker = DataValidation(type='list', formula1=active_name_range, allow_blank=True)
+    ws.add_data_validation(dv_worker)
+    dv_worker.add(PAYSLIP_WORKER_CELL)
+
+    month_list = '"' + ','.join(MONTH_SHEETS) + '"'
+    dv_month = DataValidation(type='list', formula1=month_list, allow_blank=True)
+    ws.add_data_validation(dv_month)
+    dv_month.add(PAYSLIP_MONTH_CELL)
+
+
 def build(path):
     wb = openpyxl.load_workbook(path, keep_vba=True)
 
@@ -68,6 +141,12 @@ def build(path):
         del wb['PayEntries']
     payentries_ws = wb.create_sheet('PayEntries')
     _add_payentries_sheet(payentries_ws)
+
+    if 'Payslip' in wb.sheetnames:
+        del wb['Payslip']
+    payslip_ws = wb.create_sheet(PAYSLIP_SHEET_NAME)
+    _add_payslip_sheet(payslip_ws)
+    _add_payslip_dropdowns(payslip_ws)
 
     wb.save(path)
 

@@ -133,7 +133,51 @@ def test_payentries_invalid_worker_id():
         print("test_payentries_invalid_worker_id PASSED")
 
 
+def test_payslip_lookup_and_no_entry_message():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_payslip.build(path)
+
+        import openpyxl
+        wb = openpyxl.load_workbook(path)
+        workers = wb['Workers']
+        workers.cell(row=3, column=1, value='W001')
+        workers.cell(row=3, column=2, value='Ramesh')
+        workers.cell(row=3, column=3, value='Labourer')
+        workers.cell(row=3, column=4, value='Per Day')
+        workers.cell(row=3, column=5, value=500)
+        workers.cell(row=3, column=6, value='Cash')
+        workers.cell(row=3, column=7, value='Y')
+
+        entries = wb['PayEntries']
+        entries.cell(row=3, column=1, value='W001')
+        entries.cell(row=3, column=2, value='Ramesh')
+        entries.cell(row=3, column=3, value='Jan2026')
+        entries.cell(row=3, column=4, value=20)
+        entries.cell(row=3, column=6, value=1000)
+        entries.cell(row=3, column=8, value='Cash')
+
+        payslip = wb[build_payslip.PAYSLIP_SHEET_NAME]
+        payslip[build_payslip.PAYSLIP_WORKER_CELL] = 'Ramesh'
+        payslip[build_payslip.PAYSLIP_MONTH_CELL] = 'Jan2026'
+        wb.save(path)
+
+        sol = calc(path)
+        assert cell_value(sol, path, 'Payslip', build_payslip.PAYSLIP_NET_PAY_CELL) == 9000
+        assert cell_value(sol, path, 'Payslip', build_payslip.PAYSLIP_PAYMENT_MODE_CELL) == 'Cash'
+
+        # No PayEntries row for Feb2026 -> should show the "no entry" message, not an error
+        wb2 = openpyxl.load_workbook(path)
+        wb2[build_payslip.PAYSLIP_SHEET_NAME][build_payslip.PAYSLIP_MONTH_CELL] = 'Feb2026'
+        wb2.save(path)
+        sol2 = calc(path)
+        assert cell_value(sol2, path, 'Payslip', 'B12') == 'No pay entry found for this period'
+        assert cell_value(sol2, path, 'Payslip', build_payslip.PAYSLIP_NET_PAY_CELL) == ''
+        print("test_payslip_lookup_and_no_entry_message PASSED")
+
+
 if __name__ == '__main__':
     test_workers_sheet_structure_and_active_name_formula()
     test_payentries_formulas()
     test_payentries_invalid_worker_id()
+    test_payslip_lookup_and_no_entry_message()
