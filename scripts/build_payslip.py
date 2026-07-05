@@ -2,7 +2,7 @@ import sys
 
 import openpyxl
 from openpyxl.worksheet.datavalidation import DataValidation
-from openpyxl.styles import Font, PatternFill, Border, Side
+from openpyxl.styles import Font, Border, Side
 
 sys.path.insert(0, __file__.rsplit('/', 1)[0])
 from build_dashboard import MONTH_SHEETS
