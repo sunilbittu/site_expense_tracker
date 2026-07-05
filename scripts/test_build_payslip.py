@@ -190,9 +190,30 @@ def test_styling_preserves_formulas():
         print("test_styling_preserves_formulas PASSED")
 
 
+def test_builds_cleanly_against_real_workbook():
+    with tempfile.TemporaryDirectory() as tmp:
+        import shutil
+        path = os.path.join(tmp, 'real_copy.xlsm')
+        shutil.copyfile(REAL_WORKBOOK, path)
+        build_payslip.build(path)
+
+        import openpyxl
+        wb = openpyxl.load_workbook(path, keep_vba=True)
+        assert wb.vba_archive is not None, "macro was dropped by build_payslip.build()"
+        assert 'Workers' in wb.sheetnames
+        assert 'PayEntries' in wb.sheetnames
+        assert 'Payslip' in wb.sheetnames
+
+        sol = calc(path)
+        # No workers/pay entries exist yet -> Payslip should show the "no entry" message cleanly
+        assert cell_value(sol, path, 'Payslip', 'B12') in ('No pay entry found for this period', '')
+        print("test_builds_cleanly_against_real_workbook PASSED")
+
+
 if __name__ == '__main__':
     test_workers_sheet_structure_and_active_name_formula()
     test_payentries_formulas()
     test_payentries_invalid_worker_id()
     test_payslip_lookup_and_no_entry_message()
     test_styling_preserves_formulas()
+    test_builds_cleanly_against_real_workbook()
