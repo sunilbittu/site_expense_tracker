@@ -62,7 +62,44 @@ def test_kpi_cards():
         print("test_kpi_cards PASSED")
 
 
+def test_category_tables():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_dashboard.build(path)
+        sol = calc(path)
+
+        import openpyxl
+        wb = openpyxl.load_workbook(path)
+        dash = wb['Dashboard']
+
+        # Main Category spend: find the "Materials" row, assert amount == 400
+        materials_row = None
+        for r in range(build_dashboard.MAIN_CAT_FIRST_ROW, build_dashboard.MAIN_CAT_LAST_ROW + 1):
+            if dash.cell(row=r, column=6).value == 'Materials':
+                materials_row = r
+        assert materials_row is not None
+        assert cell_value(sol, path, 'Dashboard', 'G%d' % materials_row) == 400
+
+        # Income by Category: find the "Sales" row, assert amount == 1000
+        sales_row = None
+        for r in range(build_dashboard.INCOME_CAT_FIRST_ROW, build_dashboard.INCOME_CAT_LAST_ROW + 1):
+            if dash.cell(row=r, column=9).value == 'Sales':
+                sales_row = r
+        assert sales_row is not None
+        assert cell_value(sol, path, 'Dashboard', 'J%d' % sales_row) == 1000
+
+        # Bank vs Cash: Bank total == 1000 (the receipt), Cash total == 400 (the payment)
+        bank_row, cash_row = build_dashboard.BANKCASH_FIRST_ROW, build_dashboard.BANKCASH_FIRST_ROW + 1
+        assert dash.cell(row=bank_row, column=12).value == 'Bank'
+        assert cell_value(sol, path, 'Dashboard', 'M%d' % bank_row) == 1000
+        assert dash.cell(row=cash_row, column=12).value == 'Cash'
+        assert cell_value(sol, path, 'Dashboard', 'M%d' % cash_row) == 400
+
+        print("test_category_tables PASSED")
+
+
 if __name__ == '__main__':
     test_read_categories()
     test_monthly_trend_table()
     test_kpi_cards()
+    test_category_tables()

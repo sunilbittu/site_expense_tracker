@@ -16,6 +16,18 @@ KPI_LABEL_ROW = 3
 KPI_VALUE_ROW = 4
 KPI_CELLS = {'balance': 'A4', 'receipts': 'C4', 'payments': 'E4', 'net': 'G4'}
 
+MAIN_CAT_HEADER_ROW = 44
+MAIN_CAT_FIRST_ROW = 45
+MAIN_CAT_LAST_ROW = 54  # 10 main categories
+
+INCOME_CAT_HEADER_ROW = 44
+INCOME_CAT_FIRST_ROW = 45
+INCOME_CAT_LAST_ROW = 48  # 4 income categories
+
+BANKCASH_HEADER_ROW = 44
+BANKCASH_FIRST_ROW = 45
+BANKCASH_LAST_ROW = 46  # Bank, Cash
+
 
 def read_categories(wb):
     """Read Income Categories, Main Categories, and the Main->Sub-category
@@ -80,15 +92,58 @@ def _add_kpi_cards(ws):
     ws['G4'] = "=%s-%s" % (KPI_CELLS['receipts'], KPI_CELLS['payments'])
 
 
+def _main_category_formula(main_cat_cell):
+    terms = ["SUMIFS(%s!K3:K100,%s!L3:L100,%s)" % (m, m, main_cat_cell) for m in MONTH_SHEETS]
+    return "=" + "+".join(terms)
+
+
+def _income_category_formula(income_cat_cell):
+    terms = ["SUMIFS(%s!D3:D100,%s!E3:E100,%s)" % (m, m, income_cat_cell) for m in MONTH_SHEETS]
+    return "=" + "+".join(terms)
+
+
+def _payment_mode_formula(mode_cell):
+    terms = []
+    for m in MONTH_SHEETS:
+        terms.append("SUMIFS(%s!D3:D100,%s!F3:F100,%s)" % (m, m, mode_cell))
+        terms.append("SUMIFS(%s!K3:K100,%s!N3:N100,%s)" % (m, m, mode_cell))
+    return "=" + "+".join(terms)
+
+
+def _add_category_tables(ws, income_categories, main_categories):
+    ws.cell(row=MAIN_CAT_HEADER_ROW, column=6, value='Main Category')
+    ws.cell(row=MAIN_CAT_HEADER_ROW, column=7, value='Amount')
+    for i, cat in enumerate(main_categories):
+        row = MAIN_CAT_FIRST_ROW + i
+        ws.cell(row=row, column=6, value=cat)
+        ws.cell(row=row, column=7, value=_main_category_formula("$F%d" % row))
+
+    ws.cell(row=INCOME_CAT_HEADER_ROW, column=9, value='Income Category')
+    ws.cell(row=INCOME_CAT_HEADER_ROW, column=10, value='Amount')
+    for i, cat in enumerate(income_categories):
+        row = INCOME_CAT_FIRST_ROW + i
+        ws.cell(row=row, column=9, value=cat)
+        ws.cell(row=row, column=10, value=_income_category_formula("$I%d" % row))
+
+    ws.cell(row=BANKCASH_HEADER_ROW, column=12, value='Payment Mode')
+    ws.cell(row=BANKCASH_HEADER_ROW, column=13, value='Amount')
+    for i, mode in enumerate(['Bank', 'Cash']):
+        row = BANKCASH_FIRST_ROW + i
+        ws.cell(row=row, column=12, value=mode)
+        ws.cell(row=row, column=13, value=_payment_mode_formula("$L%d" % row))
+
+
 def build(path):
     wb = openpyxl.load_workbook(path)
     if 'Dashboard' in wb.sheetnames:
         del wb['Dashboard']
     ws = wb.create_sheet('Dashboard', 0)
+    income_categories, main_categories, main_sub = read_categories(wb)
 
     ws.cell(row=1, column=1, value='Site Expense Dashboard')
     _add_monthly_trend_table(ws)
     _add_kpi_cards(ws)
+    _add_category_tables(ws, income_categories, main_categories)
 
     wb.save(path)
 
