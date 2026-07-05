@@ -2,6 +2,7 @@ import sys
 
 import openpyxl
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 MONTH_SHEETS = [
     'Jan2026', 'Feb2026', 'Mar2026', 'Apr2026', 'May2026', 'Jun2026',
@@ -27,6 +28,10 @@ INCOME_CAT_LAST_ROW = 48  # 4 income categories
 BANKCASH_HEADER_ROW = 44
 BANKCASH_FIRST_ROW = 45
 BANKCASH_LAST_ROW = 46  # Bank, Cash
+
+SUBCAT_HEADER_ROW = 60
+SUBCAT_FIRST_ROW = 61
+SUBCAT_LAST_ROW = 128  # 68 sub-categories across all main categories
 
 
 def read_categories(wb):
@@ -133,6 +138,32 @@ def _add_category_tables(ws, income_categories, main_categories):
         ws.cell(row=row, column=13, value=_payment_mode_formula("$L%d" % row))
 
 
+def _subcategory_formula(main_cell, sub_cell):
+    terms = [
+        "SUMIFS(%s!K3:K100,%s!L3:L100,%s,%s!M3:M100,%s)" % (m, m, main_cell, m, sub_cell)
+        for m in MONTH_SHEETS
+    ]
+    return "=" + "+".join(terms)
+
+
+def _add_subcategory_detail_table(ws, main_sub):
+    ws.cell(row=SUBCAT_HEADER_ROW, column=1, value='Main Category')
+    ws.cell(row=SUBCAT_HEADER_ROW, column=2, value='Sub-Category')
+    ws.cell(row=SUBCAT_HEADER_ROW, column=3, value='Amount')
+
+    row = SUBCAT_FIRST_ROW
+    for main, subs in main_sub.items():
+        for sub in subs:
+            ws.cell(row=row, column=1, value=main)
+            ws.cell(row=row, column=2, value=sub)
+            ws.cell(row=row, column=3, value=_subcategory_formula("$A%d" % row, "$B%d" % row))
+            row += 1
+
+    table = Table(displayName='SubCategoryDetail', ref='A%d:C%d' % (SUBCAT_HEADER_ROW, SUBCAT_LAST_ROW))
+    table.tableStyleInfo = TableStyleInfo(name='TableStyleMedium2', showRowStripes=True)
+    ws.add_table(table)
+
+
 def build(path):
     wb = openpyxl.load_workbook(path)
     if 'Dashboard' in wb.sheetnames:
@@ -144,6 +175,7 @@ def build(path):
     _add_monthly_trend_table(ws)
     _add_kpi_cards(ws)
     _add_category_tables(ws, income_categories, main_categories)
+    _add_subcategory_detail_table(ws, main_sub)
 
     wb.save(path)
 

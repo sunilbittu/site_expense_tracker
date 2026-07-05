@@ -98,8 +98,30 @@ def test_category_tables():
         print("test_category_tables PASSED")
 
 
+def test_subcategory_detail_table():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_dashboard.build(path)
+        sol = calc(path)
+
+        import openpyxl
+        wb = openpyxl.load_workbook(path)
+        dash = wb['Dashboard']
+
+        target_row = None
+        for r in range(build_dashboard.SUBCAT_FIRST_ROW, build_dashboard.SUBCAT_LAST_ROW + 1):
+            if dash.cell(row=r, column=1).value == 'Materials' and dash.cell(row=r, column=2).value == 'Cement':
+                target_row = r
+        assert target_row is not None
+        assert cell_value(sol, path, 'Dashboard', 'C%d' % target_row) == 400
+
+        assert 'SubCategoryDetail' in dash.tables
+        print("test_subcategory_detail_table PASSED")
+
+
 if __name__ == '__main__':
     test_read_categories()
     test_monthly_trend_table()
     test_kpi_cards()
     test_category_tables()
+    test_subcategory_detail_table()
