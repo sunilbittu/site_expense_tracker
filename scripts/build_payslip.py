@@ -71,8 +71,14 @@ def _add_payentries_sheet(ws):
         ws.cell(row=row, column=7, value='=IF(OR(%s="",E%d="Invalid Worker ID"),"",E%d-F%d)' % (worker_id_cell, row, row, row))
         ws.cell(row=row, column=8, value='=IF(%s="","",IFERROR(%s,"Invalid Worker ID"))' % (worker_id_cell, default_mode_lookup))
         ws.cell(row=row, column=11, value='=A%d&"|"&C%d' % (row, row))
+        ws.cell(row=row, column=3).number_format = '@'
 
     ws.column_dimensions['K'].hidden = True
+
+    month_list = '"' + ','.join(MONTH_SHEETS) + '"'
+    dv_month = DataValidation(type='list', formula1=month_list, allow_blank=True)
+    ws.add_data_validation(dv_month)
+    dv_month.add('C%d:C%d' % (PAYENTRIES_FIRST_ROW, PAYENTRIES_LAST_ROW))
 
 
 def _add_payslip_sheet(ws):

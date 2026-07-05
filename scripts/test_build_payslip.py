@@ -133,6 +133,30 @@ def test_payentries_invalid_worker_id():
         print("test_payentries_invalid_worker_id PASSED")
 
 
+def test_payentries_month_column_protected_from_date_autoconversion():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_payslip.build(path)
+
+        import openpyxl
+        wb = openpyxl.load_workbook(path)
+        entries = wb['PayEntries']
+
+        # Month column (C) must be forced to Text format, otherwise Excel
+        # auto-converts a typed month like "Jan2026" into a date, silently
+        # breaking the Match Key join to Payslip/PayEntries lookups.
+        assert entries.cell(row=3, column=3).number_format == '@'
+        assert entries.cell(row=build_payslip.PAYENTRIES_LAST_ROW, column=3).number_format == '@'
+
+        # Month column must also offer a dropdown restricted to the same
+        # month names Payslip uses, instead of free-typed text.
+        month_dvs = [dv for dv in entries.data_validations.dataValidation if dv.type == 'list']
+        assert any('C3' in str(dv.sqref) for dv in month_dvs), "no list validation covering PayEntries!C3"
+        matching = [dv for dv in month_dvs if 'C3' in str(dv.sqref)][0]
+        assert matching.formula1 == '"' + ','.join(build_payslip.MONTH_SHEETS) + '"'
+        print("test_payentries_month_column_protected_from_date_autoconversion PASSED")
+
+
 def test_payslip_lookup_and_no_entry_message():
     with tempfile.TemporaryDirectory() as tmp:
         path = sample_workbook(tmp)
@@ -214,6 +238,7 @@ if __name__ == '__main__':
     test_workers_sheet_structure_and_active_name_formula()
     test_payentries_formulas()
     test_payentries_invalid_worker_id()
+    test_payentries_month_column_protected_from_date_autoconversion()
     test_payslip_lookup_and_no_entry_message()
     test_styling_preserves_formulas()
     test_builds_cleanly_against_real_workbook()

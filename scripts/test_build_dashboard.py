@@ -31,8 +31,8 @@ def test_read_categories():
     wb = openpyxl.load_workbook(REAL_WORKBOOK)
     income, main, main_sub = build_dashboard.read_categories(wb)
     assert income == ['Investor Capital', 'Partner Contribution', 'Loan Received', 'Sales']
-    assert len(main) == 10
-    assert sum(len(v) for v in main_sub.values()) == 68
+    assert len(main) == 12
+    assert sum(len(v) for v in main_sub.values()) == 180
     print("test_read_categories PASSED")
 
 

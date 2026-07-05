@@ -23,7 +23,7 @@ KPI_CELLS = {
 
 MAIN_CAT_HEADER_ROW = 44
 MAIN_CAT_FIRST_ROW = 45
-MAIN_CAT_LAST_ROW = 54  # 10 main categories
+MAIN_CAT_LAST_ROW = 56  # 12 main categories
 
 INCOME_CAT_HEADER_ROW = 44
 INCOME_CAT_FIRST_ROW = 45
@@ -35,7 +35,7 @@ BANKCASH_LAST_ROW = 46  # Bank, Cash
 
 SUBCAT_HEADER_ROW = 60
 SUBCAT_FIRST_ROW = 61
-SUBCAT_LAST_ROW = 128  # 68 sub-categories across all main categories
+SUBCAT_LAST_ROW = 240  # 180 sub-categories across all main categories
 
 
 def read_categories(wb):
@@ -70,26 +70,43 @@ def read_categories(wb):
     return income_categories, main_categories, main_sub
 
 
-def _add_monthly_trend_table(ws):
+def _find_row(ws, label):
+    """Locate a Summary-section row (e.g. 'Total Receipts') by its label in
+    column A, since month sheets don't all have the same number of entry
+    rows and so their Summary blocks don't all sit at the same row."""
+    for r in range(1, ws.max_row + 1):
+        if ws.cell(row=r, column=1).value == label:
+            return r
+    raise ValueError("Could not find row labeled %r in sheet %r" % (label, ws.title))
+
+
+def _add_monthly_trend_table(wb, ws):
     ws.cell(row=MONTHLY_TREND_HEADER_ROW, column=1, value='Month')
     ws.cell(row=MONTHLY_TREND_HEADER_ROW, column=2, value='Receipts')
     ws.cell(row=MONTHLY_TREND_HEADER_ROW, column=3, value='Payments')
     ws.cell(row=MONTHLY_TREND_HEADER_ROW, column=4, value='Closing Balance')
 
     for i, month in enumerate(MONTH_SHEETS):
+        month_ws = wb[month]
+        receipts_row = _find_row(month_ws, 'Total Receipts')
+        payments_row = _find_row(month_ws, 'Total Payments')
+        closing_row = _find_row(month_ws, 'Net / Closing Balance')
         row = MONTHLY_TREND_FIRST_ROW + i
         ws.cell(row=row, column=1, value=month)
-        ws.cell(row=row, column=2, value="='%s'!B104" % month)
-        ws.cell(row=row, column=3, value="='%s'!B105" % month)
-        ws.cell(row=row, column=4, value="='%s'!B106" % month)
+        ws.cell(row=row, column=2, value="='%s'!B%d" % (month, receipts_row))
+        ws.cell(row=row, column=3, value="='%s'!B%d" % (month, payments_row))
+        ws.cell(row=row, column=4, value="='%s'!B%d" % (month, closing_row))
 
 
-def _add_kpi_cards(ws):
+def _add_kpi_cards(wb, ws):
     trend_receipts_range = "B%d:B%d" % (MONTHLY_TREND_FIRST_ROW, MONTHLY_TREND_LAST_ROW)
     trend_payments_range = "C%d:C%d" % (MONTHLY_TREND_FIRST_ROW, MONTHLY_TREND_LAST_ROW)
 
+    last_month_ws = wb[MONTH_SHEETS[-1]]
+    closing_row = _find_row(last_month_ws, 'Net / Closing Balance')
+
     ws['A3'] = 'Current Cash Balance'
-    ws['A4'] = "='%s'!B106" % MONTH_SHEETS[-1]
+    ws['A4'] = "='%s'!B%d" % (MONTH_SHEETS[-1], closing_row)
 
     ws['C3'] = 'YTD Total Receipts'
     ws['C4'] = "=SUM(%s)" % trend_receipts_range
@@ -317,8 +334,8 @@ def build(path):
     income_categories, main_categories, main_sub = read_categories(wb)
 
     ws.cell(row=1, column=1, value='Site Expense Dashboard')
-    _add_monthly_trend_table(ws)
-    _add_kpi_cards(ws)
+    _add_monthly_trend_table(wb, ws)
+    _add_kpi_cards(wb, ws)
     _add_category_tables(ws, income_categories, main_categories)
     _add_subcategory_detail_table(ws, main_sub)
     _add_charts(ws)
