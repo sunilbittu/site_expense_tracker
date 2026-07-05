@@ -206,42 +206,82 @@ def _add_charts(ws):
 def _style_dashboard(ws):
     title_font = Font(bold=True, size=14)
     kpi_label_font = Font(bold=True, color='FFFFFF')
-    kpi_label_fill = PatternFill(start_color='37474F', end_color='37474F', fill_type='solid')
     kpi_value_font = Font(bold=True, size=13)
     table_header_font = Font(bold=True, color='FFFFFF')
-    table_header_fill = PatternFill(start_color='37474F', end_color='37474F', fill_type='solid')
     thin = Side(style='thin', color='B0B0B0')
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
     ws['A1'].font = title_font
 
-    for cell in KPI_CELLS.values():
-        col = cell[0]
-        label_cell = ws['%s%d' % (col, KPI_LABEL_ROW)]
+    # KPI cards with palette-specific colors: green for receipts, red for payments, slate for neutral
+    kpi_label_colors = {
+        'A': '37474F',  # Current Cash Balance - slate (neutral)
+        'C': '2E7D32',  # YTD Total Receipts - green
+        'E': 'C62828',  # YTD Total Payments - red
+        'G': '37474F',  # Net Position (YTD) - slate (neutral/summary)
+    }
+    for col_letter, color_hex in kpi_label_colors.items():
+        label_cell = ws['%s%d' % (col_letter, KPI_LABEL_ROW)]
         label_cell.font = kpi_label_font
-        label_cell.fill = kpi_label_fill
+        label_cell.fill = PatternFill(start_color=color_hex, end_color=color_hex, fill_type='solid')
         label_cell.alignment = Alignment(horizontal='center')
-        value_cell = ws[cell]
+        value_cell = ws['%s%d' % (col_letter, KPI_VALUE_ROW)]
         value_cell.font = kpi_value_font
         value_cell.number_format = '#,##0.00'
         value_cell.border = border
 
-    header_rows_cols = [
-        (MONTHLY_TREND_HEADER_ROW, [1, 2, 3, 4]),
-        (MAIN_CAT_HEADER_ROW, [6, 7]),
-        (INCOME_CAT_HEADER_ROW, [9, 10]),
-        (BANKCASH_HEADER_ROW, [12, 13]),
-    ]
-    for row, cols in header_rows_cols:
-        for col in cols:
-            c = ws.cell(row=row, column=col)
-            c.font = table_header_font
-            c.fill = table_header_fill
-            c.alignment = Alignment(horizontal='center')
-            c.border = border
+    # Monthly Trend header: Month=slate, Receipts=green, Payments=red, Closing Balance=slate
+    for col, color_hex in [(1, '37474F'), (2, '2E7D32'), (3, 'C62828'), (4, '37474F')]:
+        c = ws.cell(row=MONTHLY_TREND_HEADER_ROW, column=col)
+        c.font = table_header_font
+        c.fill = PatternFill(start_color=color_hex, end_color=color_hex, fill_type='solid')
+        c.alignment = Alignment(horizontal='center')
+        c.border = border
 
-    for col_letter in ['B', 'C', 'D', 'G', 'J', 'M']:
-        for row in range(MONTHLY_TREND_FIRST_ROW, SUBCAT_LAST_ROW + 1):
+    # Main Category header: red (expense/payment-side table)
+    for col in [6, 7]:
+        c = ws.cell(row=MAIN_CAT_HEADER_ROW, column=col)
+        c.font = table_header_font
+        c.fill = PatternFill(start_color='C62828', end_color='C62828', fill_type='solid')
+        c.alignment = Alignment(horizontal='center')
+        c.border = border
+
+    # Income Category header: green (receipt-side table)
+    for col in [9, 10]:
+        c = ws.cell(row=INCOME_CAT_HEADER_ROW, column=col)
+        c.font = table_header_font
+        c.fill = PatternFill(start_color='2E7D32', end_color='2E7D32', fill_type='solid')
+        c.alignment = Alignment(horizontal='center')
+        c.border = border
+
+    # Bank vs Cash header: slate (neutral, mixes receipts and payments)
+    for col in [12, 13]:
+        c = ws.cell(row=BANKCASH_HEADER_ROW, column=col)
+        c.font = table_header_font
+        c.fill = PatternFill(start_color='37474F', end_color='37474F', fill_type='solid')
+        c.alignment = Alignment(horizontal='center')
+        c.border = border
+
+    # Sub-Category Detail header: red (expense/payment-side table)
+    for col in [1, 2, 3]:
+        c = ws.cell(row=SUBCAT_HEADER_ROW, column=col)
+        c.font = table_header_font
+        c.fill = PatternFill(start_color='C62828', end_color='C62828', fill_type='solid')
+        c.alignment = Alignment(horizontal='center')
+        c.border = border
+
+    # Precise number formatting for numeric columns
+    numeric_ranges = [
+        ('B', MONTHLY_TREND_FIRST_ROW, MONTHLY_TREND_LAST_ROW),
+        ('C', MONTHLY_TREND_FIRST_ROW, MONTHLY_TREND_LAST_ROW),
+        ('D', MONTHLY_TREND_FIRST_ROW, MONTHLY_TREND_LAST_ROW),
+        ('G', MAIN_CAT_FIRST_ROW, MAIN_CAT_LAST_ROW),
+        ('J', INCOME_CAT_FIRST_ROW, INCOME_CAT_LAST_ROW),
+        ('M', BANKCASH_FIRST_ROW, BANKCASH_LAST_ROW),
+        ('C', SUBCAT_FIRST_ROW, SUBCAT_LAST_ROW),
+    ]
+    for col_letter, first_row, last_row in numeric_ranges:
+        for row in range(first_row, last_row + 1):
             ws['%s%d' % (col_letter, row)].number_format = '#,##0.00'
 
     for col_letter, width in [('A', 22), ('B', 18), ('C', 18), ('D', 22),
