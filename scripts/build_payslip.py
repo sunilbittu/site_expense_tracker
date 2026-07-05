@@ -102,6 +102,7 @@ def _add_payslip_sheet(ws):
     key_range = 'PayEntries!$K$%d:$K$%d' % (PAYENTRIES_FIRST_ROW, PAYENTRIES_LAST_ROW)
     ws[PAYSLIP_MATCH_ROW_CELL] = '=IFERROR(MATCH(%s&"|"&%s,%s,0),0)' % (
         PAYSLIP_WORKER_ID_CELL, PAYSLIP_MONTH_CELL, key_range)
+    ws.column_dimensions['Z'].hidden = True
 
     ws[PAYSLIP_MESSAGE_CELL] = '=IF(%s=0,"No pay entry found for this period","")' % PAYSLIP_MATCH_ROW_CELL
 
@@ -118,7 +119,7 @@ def _add_payslip_sheet(ws):
 
 
 def _add_payslip_dropdowns(ws):
-    active_name_range = "='Workers'!$H$%d:$H$%d" % (WORKERS_FIRST_ROW, WORKERS_LAST_ROW)
+    active_name_range = "'Workers'!$H$%d:$H$%d" % (WORKERS_FIRST_ROW, WORKERS_LAST_ROW)
     dv_worker = DataValidation(type='list', formula1=active_name_range, allow_blank=True)
     ws.add_data_validation(dv_worker)
     dv_worker.add(PAYSLIP_WORKER_CELL)
