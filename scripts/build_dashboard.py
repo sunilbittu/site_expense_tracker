@@ -4,6 +4,7 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.chart import LineChart, BarChart, PieChart, Reference
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 MONTH_SHEETS = [
     'Jan2026', 'Feb2026', 'Mar2026', 'Apr2026', 'May2026', 'Jun2026',
@@ -202,6 +203,53 @@ def _add_charts(ws):
     ws.add_chart(income_chart, 'J24')
 
 
+def _style_dashboard(ws):
+    title_font = Font(bold=True, size=14)
+    kpi_label_font = Font(bold=True, color='FFFFFF')
+    kpi_label_fill = PatternFill(start_color='37474F', end_color='37474F', fill_type='solid')
+    kpi_value_font = Font(bold=True, size=13)
+    table_header_font = Font(bold=True, color='FFFFFF')
+    table_header_fill = PatternFill(start_color='37474F', end_color='37474F', fill_type='solid')
+    thin = Side(style='thin', color='B0B0B0')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    ws['A1'].font = title_font
+
+    for cell in KPI_CELLS.values():
+        col = cell[0]
+        label_cell = ws['%s%d' % (col, KPI_LABEL_ROW)]
+        label_cell.font = kpi_label_font
+        label_cell.fill = kpi_label_fill
+        label_cell.alignment = Alignment(horizontal='center')
+        value_cell = ws[cell]
+        value_cell.font = kpi_value_font
+        value_cell.number_format = '#,##0.00'
+        value_cell.border = border
+
+    header_rows_cols = [
+        (MONTHLY_TREND_HEADER_ROW, [1, 2, 3, 4]),
+        (MAIN_CAT_HEADER_ROW, [6, 7]),
+        (INCOME_CAT_HEADER_ROW, [9, 10]),
+        (BANKCASH_HEADER_ROW, [12, 13]),
+    ]
+    for row, cols in header_rows_cols:
+        for col in cols:
+            c = ws.cell(row=row, column=col)
+            c.font = table_header_font
+            c.fill = table_header_fill
+            c.alignment = Alignment(horizontal='center')
+            c.border = border
+
+    for col_letter in ['B', 'C', 'D', 'G', 'J', 'M']:
+        for row in range(MONTHLY_TREND_FIRST_ROW, SUBCAT_LAST_ROW + 1):
+            ws['%s%d' % (col_letter, row)].number_format = '#,##0.00'
+
+    for col_letter, width in [('A', 22), ('B', 18), ('C', 18), ('D', 22),
+                               ('F', 22), ('G', 16), ('I', 22), ('J', 16),
+                               ('L', 14), ('M', 16)]:
+        ws.column_dimensions[col_letter].width = width
+
+
 def build(path):
     wb = openpyxl.load_workbook(path)
     if 'Dashboard' in wb.sheetnames:
@@ -215,6 +263,7 @@ def build(path):
     _add_category_tables(ws, income_categories, main_categories)
     _add_subcategory_detail_table(ws, main_sub)
     _add_charts(ws)
+    _style_dashboard(ws)
 
     wb.save(path)
 

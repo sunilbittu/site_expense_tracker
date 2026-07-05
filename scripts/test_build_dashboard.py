@@ -137,6 +137,22 @@ def test_charts():
         print("test_charts PASSED")
 
 
+def test_builds_cleanly_against_real_workbook():
+    with tempfile.TemporaryDirectory() as tmp:
+        import shutil
+        path = os.path.join(tmp, 'real_copy.xlsx')
+        shutil.copyfile(REAL_WORKBOOK, path)
+        build_dashboard.build(path)
+        sol = calc(path)
+
+        # With no data entered anywhere, every KPI must resolve to 0, not an error.
+        for cell in build_dashboard.KPI_CELLS.values():
+            value = cell_value(sol, path, 'Dashboard', cell)
+            assert value == 0, "%s resolved to %r, expected 0" % (cell, value)
+
+        print("test_builds_cleanly_against_real_workbook PASSED")
+
+
 if __name__ == '__main__':
     test_read_categories()
     test_monthly_trend_table()
@@ -144,3 +160,4 @@ if __name__ == '__main__':
     test_category_tables()
     test_subcategory_detail_table()
     test_charts()
+    test_builds_cleanly_against_real_workbook()
