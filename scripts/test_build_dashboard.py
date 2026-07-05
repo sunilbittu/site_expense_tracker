@@ -62,6 +62,24 @@ def test_kpi_cards():
         print("test_kpi_cards PASSED")
 
 
+def test_cash_hand_and_bank_kpis():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_dashboard.build(path)
+        sol = calc(path)
+        # Fixture: Jan2026 has a 1000 Bank receipt and a 400 Cash payment.
+        # Cash at Hand = Cash receipts (0) - Cash payments (400) = -400
+        # Cash at Bank = Bank receipts (1000) - Bank payments (0) = 1000
+        assert cell_value(sol, path, 'Dashboard', build_dashboard.KPI_CELLS['cash_hand']) == -400
+        assert cell_value(sol, path, 'Dashboard', build_dashboard.KPI_CELLS['cash_bank']) == 1000
+        # Cash at Hand + Cash at Bank must always equal Current Cash Balance
+        balance = cell_value(sol, path, 'Dashboard', build_dashboard.KPI_CELLS['balance'])
+        cash_hand = cell_value(sol, path, 'Dashboard', build_dashboard.KPI_CELLS['cash_hand'])
+        cash_bank = cell_value(sol, path, 'Dashboard', build_dashboard.KPI_CELLS['cash_bank'])
+        assert cash_hand + cash_bank == balance
+        print("test_cash_hand_and_bank_kpis PASSED")
+
+
 def test_category_tables():
     with tempfile.TemporaryDirectory() as tmp:
         path = sample_workbook(tmp)
@@ -158,6 +176,7 @@ if __name__ == '__main__':
     test_read_categories()
     test_monthly_trend_table()
     test_kpi_cards()
+    test_cash_hand_and_bank_kpis()
     test_category_tables()
     test_subcategory_detail_table()
     test_charts()

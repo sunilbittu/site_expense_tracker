@@ -16,7 +16,10 @@ MONTHLY_TREND_LAST_ROW = MONTHLY_TREND_FIRST_ROW + len(MONTH_SHEETS) - 1  # 56
 
 KPI_LABEL_ROW = 3
 KPI_VALUE_ROW = 4
-KPI_CELLS = {'balance': 'A4', 'receipts': 'C4', 'payments': 'E4', 'net': 'G4'}
+KPI_CELLS = {
+    'balance': 'A4', 'receipts': 'C4', 'payments': 'E4', 'net': 'G4',
+    'cash_hand': 'I4', 'cash_bank': 'K4',
+}
 
 MAIN_CAT_HEADER_ROW = 44
 MAIN_CAT_FIRST_ROW = 45
@@ -97,6 +100,12 @@ def _add_kpi_cards(ws):
     ws['G3'] = 'Net Position (YTD)'
     ws['G4'] = "=%s-%s" % (KPI_CELLS['receipts'], KPI_CELLS['payments'])
 
+    ws['I3'] = 'Cash at Hand'
+    ws['I4'] = _mode_balance_formula('Cash')
+
+    ws['K3'] = 'Cash at Bank'
+    ws['K4'] = _mode_balance_formula('Bank')
+
 
 def _main_category_formula(main_cat_cell):
     terms = ["SUMIFS(%s!K3:K100,%s!L3:L100,%s)" % (m, m, main_cat_cell) for m in MONTH_SHEETS]
@@ -113,6 +122,15 @@ def _payment_mode_formula(mode_cell):
     for m in MONTH_SHEETS:
         terms.append("SUMIFS(%s!D3:D100,%s!F3:F100,%s)" % (m, m, mode_cell))
         terms.append("SUMIFS(%s!K3:K100,%s!N3:N100,%s)" % (m, m, mode_cell))
+    return "=" + "+".join(terms)
+
+
+def _mode_balance_formula(mode):
+    quoted = '"%s"' % mode
+    terms = [
+        "SUMIFS(%s!D3:D100,%s!F3:F100,%s)-SUMIFS(%s!K3:K100,%s!N3:N100,%s)" % (m, m, quoted, m, m, quoted)
+        for m in MONTH_SHEETS
+    ]
     return "=" + "+".join(terms)
 
 
@@ -218,6 +236,8 @@ def _style_dashboard(ws):
         'C': '2E7D32',  # YTD Total Receipts - green
         'E': 'C62828',  # YTD Total Payments - red
         'G': '37474F',  # Net Position (YTD) - slate (neutral/summary)
+        'I': '37474F',  # Cash at Hand - slate (neutral/summary)
+        'K': '37474F',  # Cash at Bank - slate (neutral/summary)
     }
     for col_letter, color_hex in kpi_label_colors.items():
         label_cell = ws['%s%d' % (col_letter, KPI_LABEL_ROW)]
@@ -285,7 +305,7 @@ def _style_dashboard(ws):
 
     for col_letter, width in [('A', 22), ('B', 18), ('C', 18), ('D', 22),
                                ('F', 22), ('G', 16), ('I', 22), ('J', 16),
-                               ('L', 14), ('M', 16)]:
+                               ('K', 16), ('L', 14), ('M', 16)]:
         ws.column_dimensions[col_letter].width = width
 
 
