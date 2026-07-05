@@ -12,6 +12,10 @@ MONTHLY_TREND_HEADER_ROW = 44
 MONTHLY_TREND_FIRST_ROW = 45
 MONTHLY_TREND_LAST_ROW = MONTHLY_TREND_FIRST_ROW + len(MONTH_SHEETS) - 1  # 56
 
+KPI_LABEL_ROW = 3
+KPI_VALUE_ROW = 4
+KPI_CELLS = {'balance': 'A4', 'receipts': 'C4', 'payments': 'E4', 'net': 'G4'}
+
 
 def read_categories(wb):
     """Read Income Categories, Main Categories, and the Main->Sub-category
@@ -59,6 +63,23 @@ def _add_monthly_trend_table(ws):
         ws.cell(row=row, column=4, value="='%s'!B106" % month)
 
 
+def _add_kpi_cards(ws):
+    trend_receipts_range = "B%d:B%d" % (MONTHLY_TREND_FIRST_ROW, MONTHLY_TREND_LAST_ROW)
+    trend_payments_range = "C%d:C%d" % (MONTHLY_TREND_FIRST_ROW, MONTHLY_TREND_LAST_ROW)
+
+    ws['A3'] = 'Current Cash Balance'
+    ws['A4'] = "='%s'!B106" % MONTH_SHEETS[-1]
+
+    ws['C3'] = 'YTD Total Receipts'
+    ws['C4'] = "=SUM(%s)" % trend_receipts_range
+
+    ws['E3'] = 'YTD Total Payments'
+    ws['E4'] = "=SUM(%s)" % trend_payments_range
+
+    ws['G3'] = 'Net Position (YTD)'
+    ws['G4'] = "=%s-%s" % (KPI_CELLS['receipts'], KPI_CELLS['payments'])
+
+
 def build(path):
     wb = openpyxl.load_workbook(path)
     if 'Dashboard' in wb.sheetnames:
@@ -67,6 +88,7 @@ def build(path):
 
     ws.cell(row=1, column=1, value='Site Expense Dashboard')
     _add_monthly_trend_table(ws)
+    _add_kpi_cards(ws)
 
     wb.save(path)
 

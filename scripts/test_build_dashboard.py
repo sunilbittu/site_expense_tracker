@@ -49,6 +49,20 @@ def test_monthly_trend_table():
         print("test_monthly_trend_table PASSED")
 
 
+def test_kpi_cards():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_dashboard.build(path)
+        sol = calc(path)
+        assert cell_value(sol, path, 'Dashboard', build_dashboard.KPI_CELLS['receipts']) == 1000
+        assert cell_value(sol, path, 'Dashboard', build_dashboard.KPI_CELLS['payments']) == 400
+        assert cell_value(sol, path, 'Dashboard', build_dashboard.KPI_CELLS['net']) == 600
+        # Dec2026 closing balance carries Jan's 600 forward through empty months
+        assert cell_value(sol, path, 'Dashboard', build_dashboard.KPI_CELLS['balance']) == 600
+        print("test_kpi_cards PASSED")
+
+
 if __name__ == '__main__':
     test_read_categories()
     test_monthly_trend_table()
+    test_kpi_cards()
