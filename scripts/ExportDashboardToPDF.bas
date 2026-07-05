@@ -1,4 +1,3 @@
-Attribute VB_Name = "ExportDashboardToPDF"
 Sub ExportDashboardToPDF()
     Dim ws As Worksheet
     Dim exportPath As String
