@@ -1,7 +1,7 @@
 # Expense Tracker Dashboard — Design
 
 Date: 2026-07-05
-Workbook: `expense_tracker_2026.xlsx`
+Workbook: `expense_tracker_2026.xlsm` (was `.xlsx` at the time this was written; the workbook was later converted to `.xlsm` to support VBA macros — see the payslip-generation design doc)
 
 ## Purpose
 

@@ -41,6 +41,8 @@ def _add_workers_sheet(ws):
     for row in range(WORKERS_FIRST_ROW, WORKERS_LAST_ROW + 1):
         ws.cell(row=row, column=8, value='=IF(G%d="Y",B%d,"")' % (row, row))
 
+    ws.column_dimensions['H'].hidden = True
+
 
 def _add_payentries_sheet(ws):
     ws.cell(row=1, column=1, value='PayEntries')

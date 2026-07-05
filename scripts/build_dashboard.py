@@ -1,7 +1,6 @@
 import sys
 
 import openpyxl
-from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.chart import LineChart, BarChart, PieChart, Reference
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
