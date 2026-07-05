@@ -53,11 +53,15 @@ edit)".
 
 Four cards at the top of the sheet:
 
-- **Current Cash Balance** — closing balance of the *last month with any
-  activity*, not simply Dec2026. Found via a `LOOKUP(2, 1/((receipts<>0)
-  + (payments<>0)), balances)` formula over the Monthly Trend table,
-  wrapped in `IFERROR(..., 0)` so it shows 0 cleanly before any data
-  exists instead of `#N/A`.
+- **Current Cash Balance** — a direct reference to Dec2026's Closing
+  Balance cell (`='Dec2026'!B106`). This is always correct mid-year, not
+  just at year-end: the Opening-Balance chain means every month with no
+  transactions simply carries the prior closing balance forward
+  unchanged, so Dec2026's Closing Balance already equals whatever the
+  most recent actual transaction produced. (An earlier draft of this
+  design used a `LOOKUP`-based "last active month" formula for this —
+  that's unnecessary complexity given the carry-forward chain already
+  guarantees the same result.)
 - **YTD Total Receipts** — sum of the Monthly Trend Receipts column.
 - **YTD Total Payments** — sum of the Monthly Trend Payments column.
 - **Net Position YTD** — YTD Receipts − YTD Payments.
@@ -88,8 +92,9 @@ per-month Summary blocks already in the workbook.
 
 - Empty months (no rows entered yet) compute to 0 via SUM/SUMIFS — no
   `#DIV/0!` or `#N/A`, since no ratios are computed anywhere.
-- Before any data exists for the year, the Current Cash Balance KPI falls
-  back to 0 via `IFERROR` rather than showing an error.
+- Before any data exists for the year, the Current Cash Balance KPI
+  correctly reads 0, since Dec2026's Closing Balance formula resolves to
+  0 through the whole empty carry-forward chain (no error path needed).
 
 ## Out of Scope
 
