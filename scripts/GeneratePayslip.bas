@@ -5,6 +5,7 @@ Sub GeneratePayslip()
     Dim workerId As String
     Dim monthName As String
     Dim netPay As Double
+    Dim netPayRaw As Variant
     Dim mainCategory As String
     Dim subCategory As String
     Dim paymentMode As String
@@ -22,13 +23,15 @@ Sub GeneratePayslip()
     workerId = payslipWs.Range("B6").Value
     monthName = payslipWs.Range("B4").Value
     role = payslipWs.Range("B7").Value
-    netPay = payslipWs.Range("B16").Value
+    netPayRaw = payslipWs.Range("B16").Value
     paymentMode = payslipWs.Range("B17").Value
 
-    If workerId = "" Or monthName = "" Or payslipWs.Range("B16").Value = "" Then
+    If workerId = "" Or monthName = "" Or netPayRaw = "" Then
         MsgBox "No pay entry found for this Worker/Month. Fill in PayEntries first.", vbExclamation
         Exit Sub
     End If
+
+    netPay = CDbl(netPayRaw)
 
     ' Find the matching PayEntries row (Worker ID + Month) to read/write Payments Row Ref
     entryRow = 0
@@ -44,11 +47,10 @@ Sub GeneratePayslip()
         Exit Sub
     End If
 
+    mainCategory = "Labour & Contractors"
     If role = "Labourer" Then
-        mainCategory = "Labour & Contractors"
         subCategory = "Labour Wages"
     Else
-        mainCategory = "Labour & Contractors"
         subCategory = "Contractor Payments"
     End If
 

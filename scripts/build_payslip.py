@@ -2,7 +2,7 @@ import sys
 
 import openpyxl
 from openpyxl.worksheet.datavalidation import DataValidation
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Font, PatternFill, Border, Side
 
 sys.path.insert(0, __file__.rsplit('/', 1)[0])
 from build_dashboard import MONTH_SHEETS
@@ -135,8 +135,6 @@ def _style_payslip(ws):
     title_font = Font(bold=True, size=14)
     label_font = Font(bold=True)
     value_font = Font(size=12)
-    header_fill = PatternFill(start_color='37474F', end_color='37474F', fill_type='solid')
-    header_font = Font(bold=True, color='FFFFFF')
     thin = Side(style='thin', color='B0B0B0')
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
@@ -159,8 +157,6 @@ def _style_payslip(ws):
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 1
     ws.sheet_properties.pageSetUpPr.fitToPage = True
-
-    ws.column_dimensions['Z'].hidden = True
 
 
 def build(path):
