@@ -155,6 +155,22 @@ def test_charts():
         print("test_charts PASSED")
 
 
+def test_dashboard_is_protected():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_dashboard.build(path)
+
+        import openpyxl
+        wb = openpyxl.load_workbook(path)
+        dash = wb['Dashboard']
+        assert dash.protection.sheet is True
+        assert dash.protection.password is not None
+        # Sorting/filtering the sub-category table should still work without unprotecting
+        assert dash.protection.sort is False
+        assert dash.protection.autoFilter is False
+        print("test_dashboard_is_protected PASSED")
+
+
 def test_builds_cleanly_against_real_workbook():
     with tempfile.TemporaryDirectory() as tmp:
         import shutil
@@ -180,4 +196,5 @@ if __name__ == '__main__':
     test_category_tables()
     test_subcategory_detail_table()
     test_charts()
+    test_dashboard_is_protected()
     test_builds_cleanly_against_real_workbook()

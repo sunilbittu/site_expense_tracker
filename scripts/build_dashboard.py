@@ -37,6 +37,8 @@ SUBCAT_HEADER_ROW = 60
 SUBCAT_FIRST_ROW = 61
 SUBCAT_LAST_ROW = 240  # 180 sub-categories across all main categories
 
+DASHBOARD_PASSWORD = 'dashboard2026'
+
 
 def read_categories(wb):
     """Read Income Categories, Main Categories, and the Main->Sub-category
@@ -326,6 +328,17 @@ def _style_dashboard(ws):
         ws.column_dimensions[col_letter].width = width
 
 
+def _protect_dashboard(ws):
+    """Every cell on the Dashboard is a formula or chart fed by the month
+    sheets, so there's nothing here a user should be typing into directly.
+    Lock the whole sheet, but leave sorting/filtering the sub-category
+    table enabled since that doesn't touch the underlying formulas."""
+    ws.protection.sheet = True
+    ws.protection.password = DASHBOARD_PASSWORD
+    ws.protection.sort = False
+    ws.protection.autoFilter = False
+
+
 def build(path):
     wb = openpyxl.load_workbook(path, keep_vba=path.endswith('.xlsm'))
     if 'Dashboard' in wb.sheetnames:
@@ -340,6 +353,7 @@ def build(path):
     _add_subcategory_detail_table(ws, main_sub)
     _add_charts(ws)
     _style_dashboard(ws)
+    _protect_dashboard(ws)
 
     wb.save(path)
 
