@@ -110,6 +110,30 @@ def test_payentries_formulas():
         print("test_payentries_formulas PASSED")
 
 
+def test_payentries_invalid_worker_id():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_payslip.build(path)
+
+        import openpyxl
+        wb = openpyxl.load_workbook(path)
+        entries = wb['PayEntries']
+        # W999 does not exist in Workers -- this must not cascade a raw #N/A/#VALUE!
+        entries.cell(row=3, column=1, value='W999')
+        entries.cell(row=3, column=3, value='Jan2026')
+        entries.cell(row=3, column=4, value=20)
+        entries.cell(row=3, column=6, value=0)
+        wb.save(path)
+
+        sol = calc(path)
+        assert cell_value(sol, path, 'PayEntries', 'B3') == 'Invalid Worker ID'
+        assert cell_value(sol, path, 'PayEntries', 'E3') == 'Invalid Worker ID'
+        assert cell_value(sol, path, 'PayEntries', 'G3') == ''
+        assert cell_value(sol, path, 'PayEntries', 'H3') == 'Invalid Worker ID'
+        print("test_payentries_invalid_worker_id PASSED")
+
+
 if __name__ == '__main__':
     test_workers_sheet_structure_and_active_name_formula()
     test_payentries_formulas()
+    test_payentries_invalid_worker_id()

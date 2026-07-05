@@ -53,6 +53,8 @@ def _add_payentries_sheet(ws):
         ws.cell(row=row, column=8, value='=IF(%s="","",IFERROR(%s,"Invalid Worker ID"))' % (worker_id_cell, default_mode_lookup))
         ws.cell(row=row, column=11, value='=A%d&"|"&C%d' % (row, row))
 
+    ws.column_dimensions['K'].hidden = True
+
 
 def build(path):
     wb = openpyxl.load_workbook(path, keep_vba=True)
