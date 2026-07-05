@@ -2,6 +2,7 @@ import sys
 
 import openpyxl
 from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 sys.path.insert(0, __file__.rsplit('/', 1)[0])
 from build_dashboard import MONTH_SHEETS
@@ -130,6 +131,38 @@ def _add_payslip_dropdowns(ws):
     dv_month.add(PAYSLIP_MONTH_CELL)
 
 
+def _style_payslip(ws):
+    title_font = Font(bold=True, size=14)
+    label_font = Font(bold=True)
+    value_font = Font(size=12)
+    header_fill = PatternFill(start_color='37474F', end_color='37474F', fill_type='solid')
+    header_font = Font(bold=True, color='FFFFFF')
+    thin = Side(style='thin', color='B0B0B0')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    ws['A1'].font = title_font
+
+    for row in [3, 4, 6, 7, 8, 9, 13, 14, 15, 16, 17, 18]:
+        label_cell = ws.cell(row=row, column=1)
+        label_cell.font = label_font
+        value_cell = ws.cell(row=row, column=2)
+        value_cell.font = value_font
+        value_cell.border = border
+
+    ws[PAYSLIP_NET_PAY_CELL].font = Font(bold=True, size=13)
+
+    for col_letter, width in [('A', 22), ('B', 30)]:
+        ws.column_dimensions[col_letter].width = width
+
+    ws.print_area = 'A1:B18'
+    ws.page_setup.orientation = 'portrait'
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 1
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+
+    ws.column_dimensions['Z'].hidden = True
+
+
 def build(path):
     wb = openpyxl.load_workbook(path, keep_vba=True)
 
@@ -148,6 +181,7 @@ def build(path):
     payslip_ws = wb.create_sheet(PAYSLIP_SHEET_NAME)
     _add_payslip_sheet(payslip_ws)
     _add_payslip_dropdowns(payslip_ws)
+    _style_payslip(payslip_ws)
 
     wb.save(path)
 

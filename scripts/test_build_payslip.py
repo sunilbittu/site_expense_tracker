@@ -176,8 +176,23 @@ def test_payslip_lookup_and_no_entry_message():
         print("test_payslip_lookup_and_no_entry_message PASSED")
 
 
+def test_styling_preserves_formulas():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_payslip.build(path)
+
+        import openpyxl
+        wb = openpyxl.load_workbook(path)
+        payslip = wb[build_payslip.PAYSLIP_SHEET_NAME]
+
+        assert payslip[build_payslip.PAYSLIP_NET_PAY_CELL].value.startswith('=IF(')
+        assert payslip.print_area is not None
+        print("test_styling_preserves_formulas PASSED")
+
+
 if __name__ == '__main__':
     test_workers_sheet_structure_and_active_name_formula()
     test_payentries_formulas()
     test_payentries_invalid_worker_id()
     test_payslip_lookup_and_no_entry_message()
+    test_styling_preserves_formulas()
