@@ -3,6 +3,7 @@ import sys
 import openpyxl
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.chart import LineChart, BarChart, PieChart, Reference
 
 MONTH_SHEETS = [
     'Jan2026', 'Feb2026', 'Mar2026', 'Apr2026', 'May2026', 'Jun2026',
@@ -164,6 +165,43 @@ def _add_subcategory_detail_table(ws, main_sub):
     ws.add_table(table)
 
 
+def _add_charts(ws):
+    months_ref = Reference(ws, min_col=1, min_row=MONTHLY_TREND_FIRST_ROW, max_row=MONTHLY_TREND_LAST_ROW)
+
+    balance_chart = LineChart()
+    balance_chart.title = 'Balance Trend'
+    balance_data = Reference(ws, min_col=4, min_row=MONTHLY_TREND_HEADER_ROW, max_row=MONTHLY_TREND_LAST_ROW)
+    balance_chart.add_data(balance_data, titles_from_data=True)
+    balance_chart.set_categories(months_ref)
+    ws.add_chart(balance_chart, 'A7')
+
+    trend_chart = BarChart()
+    trend_chart.type = 'col'
+    trend_chart.grouping = 'clustered'
+    trend_chart.title = 'Monthly Receipts vs Payments'
+    trend_data = Reference(ws, min_col=2, max_col=3, min_row=MONTHLY_TREND_HEADER_ROW, max_row=MONTHLY_TREND_LAST_ROW)
+    trend_chart.add_data(trend_data, titles_from_data=True)
+    trend_chart.set_categories(months_ref)
+    ws.add_chart(trend_chart, 'J7')
+
+    main_cat_chart = BarChart()
+    main_cat_chart.type = 'bar'
+    main_cat_chart.title = 'Spend by Main Category'
+    main_cat_data = Reference(ws, min_col=7, min_row=MAIN_CAT_HEADER_ROW, max_row=MAIN_CAT_LAST_ROW)
+    main_cat_categories = Reference(ws, min_col=6, min_row=MAIN_CAT_FIRST_ROW, max_row=MAIN_CAT_LAST_ROW)
+    main_cat_chart.add_data(main_cat_data, titles_from_data=True)
+    main_cat_chart.set_categories(main_cat_categories)
+    ws.add_chart(main_cat_chart, 'A24')
+
+    income_chart = PieChart()
+    income_chart.title = 'Income by Source'
+    income_data = Reference(ws, min_col=10, min_row=INCOME_CAT_HEADER_ROW, max_row=INCOME_CAT_LAST_ROW)
+    income_categories_ref = Reference(ws, min_col=9, min_row=INCOME_CAT_FIRST_ROW, max_row=INCOME_CAT_LAST_ROW)
+    income_chart.add_data(income_data, titles_from_data=True)
+    income_chart.set_categories(income_categories_ref)
+    ws.add_chart(income_chart, 'J24')
+
+
 def build(path):
     wb = openpyxl.load_workbook(path)
     if 'Dashboard' in wb.sheetnames:
@@ -176,6 +214,7 @@ def build(path):
     _add_kpi_cards(ws)
     _add_category_tables(ws, income_categories, main_categories)
     _add_subcategory_detail_table(ws, main_sub)
+    _add_charts(ws)
 
     wb.save(path)
 

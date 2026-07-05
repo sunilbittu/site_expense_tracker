@@ -119,9 +119,28 @@ def test_subcategory_detail_table():
         print("test_subcategory_detail_table PASSED")
 
 
+def test_charts():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = sample_workbook(tmp)
+        build_dashboard.build(path)
+
+        import openpyxl
+        from openpyxl.chart import LineChart, BarChart, PieChart
+        wb = openpyxl.load_workbook(path)
+        dash = wb['Dashboard']
+
+        assert len(dash._charts) == 4
+        chart_types = [type(c) for c in dash._charts]
+        assert chart_types.count(LineChart) == 1
+        assert chart_types.count(BarChart) == 2
+        assert chart_types.count(PieChart) == 1
+        print("test_charts PASSED")
+
+
 if __name__ == '__main__':
     test_read_categories()
     test_monthly_trend_table()
     test_kpi_cards()
     test_category_tables()
     test_subcategory_detail_table()
+    test_charts()
