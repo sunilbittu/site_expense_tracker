@@ -64,6 +64,13 @@ payments-colored like the green/red cards.
   payments in that mode aren't offset by receipts in the same mode
   (mathematically valid; not specifically guarded against, matching how
   the existing Net Position card also permits negative values).
+- The `Cash at Hand + Cash at Bank == Current Cash Balance` invariant
+  holds only when every Receipts/Payments row's Payment Mode is exactly
+  `Cash` or `Bank` (Excel's SUMIFS text comparison is case-insensitive, so
+  casing doesn't matter). A blank or differently-valued mode (e.g. a typo,
+  or a future `UPI`/`Cheque` option) would still count toward Current Cash
+  Balance but be excluded from both new cards, silently breaking the
+  invariant. No guard against this is implemented.
 
 ## Out of Scope
 
